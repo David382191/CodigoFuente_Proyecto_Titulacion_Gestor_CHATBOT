@@ -1,0 +1,198 @@
+
+python -m pip install flask mysql-connector-python
+
+
+Para ejecutar:
+python app.py
+
+
+
+
+
+
+
+
+///////////////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////////////
+
+@secretaria_bp.route('/lista-secretarias')
+def listar_secretarias():
+    try:
+        conn = get_db()
+        cursor = conn.cursor(dictionary=True)
+
+        # 👇 comprobar base de datos
+        cursor.execute("SELECT DATABASE()")
+        print("BASE DE DATOS ACTUAL:", cursor.fetchone())
+
+        # 👇 ahora sí, consulta real
+        cursor.execute("""
+            SELECT
+                cedula   AS CEDULA,
+                nombre   AS Nombre,
+                apellido AS Apellido,
+                usuario  AS Usuario,
+                telefono AS Telefono
+            FROM admin_secretaria
+        """)
+
+        secretarias = cursor.fetchall()
+        print("SECRETARIAS OBTENIDAS:", secretarias)
+
+    except Error as e:
+        flash(f"Error al obtener secretarias: {e}", "danger")
+        secretarias = []
+
+    finally:
+        if 'cursor' in locals():
+            cursor.close()
+        if 'conn' in locals() and conn.is_connected():
+            conn.close()
+
+    return render_template(
+        "registros_crud/secretaria_tabla.html",
+        secretarias=secretarias
+    )
+
+
+# ==========================
+# CREAR SECRETARIA
+# ==========================
+@secretaria_bp.route('/crear-secretaria')
+def crear_secretaria():
+    return "Formulario crear secretaria (OK)"
+
+
+# ==========================
+# EDITAR
+# ==========================
+@secretaria_bp.route('/editar-secretaria/<cedula>')
+def editar_secretaria(cedula):
+    return f"Editar secretaria {cedula} (OK)"
+
+
+# ==========================
+# ELIMINAR
+# ==========================
+@secretaria_bp.route('/eliminar-secretaria/<cedula>')
+def eliminar_secretaria(cedula):
+    return f"Eliminar secretaria {cedula} (OK)"
+
+
+
+
+
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Registro de Administradores de Secretaría</title>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <style>
+        body { background: #f3f4f6; }
+        .container-box {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0px 4px 15px rgba(0,0,0,0.1);
+            margin-top: 40px;
+        }
+        .btn-create { border-radius: 30px; }
+    </style>
+</head>
+
+<body>
+
+<div class="container">
+    <div class="container-box">
+
+        <div class="d-flex justify-content-between align-items-center mb-4">
+
+            <h2 class="m-0">
+                <i class="fa-solid fa-users-gear"></i>
+                Registro de Administradores de Secretaría
+            </h2>
+
+            <!-- BUSCADOR (usa la misma ruta) -->
+            <form class="d-flex" method="GET"
+                  action="{{ url_for('secretaria.listar_secretarias') }}">
+                <input type="text" name="q" class="form-control"
+                       placeholder="Buscar (no implementado)">
+                <button class="btn btn-primary">
+                    <i class="fa-solid fa-magnifying-glass"></i>
+                </button>
+            </form>
+
+            <div class="d-flex gap-2">
+                <a href="{{ url_for('secretaria.crear_secretaria') }}"
+                   class="btn btn-success btn-create">
+                    <i class="fa-solid fa-user-plus"></i> Crear
+                </a>
+            </div>
+        </div>
+
+        <p>Total registros: {{ secretarias|length }}</p>
+
+
+        <div class="table-responsive">
+            <table class="table table-striped table-hover">
+                <thead class="table-dark">
+                <tr>
+                    <th>Cédula</th>
+                    <th>Nombre</th>
+                    <th>Apellido</th>
+                    <th>Usuario</th>
+                    <th>Teléfono</th>
+                    <th>Acciones</th>
+                </tr>
+                </thead>
+
+                <tbody>
+                {% for s in secretarias %}
+                <tr>
+                    <td>{{ s.CEDULA }}</td>
+                    <td>{{ s.Nombre }}</td>
+                    <td>{{ s.Apellido }}</td>
+                    <td>{{ s.Usuario }}</td>
+                    <td>{{ s.Telefono }}</td>
+                    <td>
+                        <a href="{{ url_for('secretaria.editar_secretaria', cedula=s.CEDULA) }}"
+                           class="btn btn-warning btn-sm">
+                            <i class="fa-solid fa-pen"></i>
+                        </a>
+
+                        <a href="{{ url_for('secretaria.eliminar_secretaria', cedula=s.CEDULA) }}"
+                           class="btn btn-danger btn-sm"
+                           onclick="return confirm('¿Seguro que deseas eliminar este registro?');">
+                            <i class="fa-solid fa-trash"></i>
+                        </a>
+                    </td>
+                </tr>
+                {% endfor %}
+                </tbody>
+
+            </table>
+        </div>
+
+    </div>
+</div>
+
+</body>
+</html>
+
+
+-----------------=================================================-----------------------
+
+cursor.execute("""
+            SELECT
+                cedula   AS CEDULA,
+                nombre   AS Nombre,
+                apellido AS Apellido,
+                usuario  AS Usuario,
+                telefono AS Telefono
+            FROM admin_secretaria
+        """)

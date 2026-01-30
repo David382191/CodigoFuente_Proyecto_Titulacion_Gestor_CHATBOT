@@ -1,0 +1,155 @@
+...................................................................................................
+
+--------------------------------------------------------
+-- 1. TABLA: SOLICITANTE
+--------------------------------------------------------
+CREATE TABLE SOLICITANTE (
+    CEDULA VARCHAR(20) PRIMARY KEY,
+    Nombre VARCHAR(100) NOT NULL,
+    Telefono VARCHAR(20),
+    Tipo_solicitante VARCHAR(50)
+);
+
+--------------------------------------------------------
+-- 2. TABLA: ADMIN_SECRETARIA
+--------------------------------------------------------
+CREATE TABLE ADMIN_SECRETARIA (
+    CEDULA VARCHAR(20) PRIMARY KEY,
+    Nombre VARCHAR(100) NOT NULL,
+    Apellido VARCHAR(100) NOT NULL,
+    Usuario VARCHAR(50) UNIQUE NOT NULL,
+    Contrasena_hash VARCHAR(255) NOT NULL,
+    Telefono VARCHAR(20)
+);
+
+--------------------------------------------------------
+-- 3. TABLA: CONVERSACION
+--------------------------------------------------------
+CREATE TABLE CONVERSACION (
+    ID_CONVERSACION SERIAL PRIMARY KEY,
+    Fecha_inicio TIMESTAMP NOT NULL,
+    Fecha_fin TIMESTAMP,
+    CEDULA_SOLICITANTE VARCHAR(20),
+    CONSTRAINT fk_solicitante
+        FOREIGN KEY (CEDULA_SOLICITANTE)
+        REFERENCES SOLICITANTE(CEDULA)
+);
+
+--------------------------------------------------------
+-- 4. TABLA: MENSAJE
+--------------------------------------------------------
+CREATE TABLE MENSAJE (
+    ID_MENSAJE SERIAL PRIMARY KEY,
+    ID_CONVERSACION INT NOT NULL,
+    Remitente VARCHAR(20) CHECK (Remitente IN ('usuario','bot','admin')) NOT NULL,
+    Contenido TEXT,
+    Fecha_hora TIMESTAMP NOT NULL,
+    CONSTRAINT fk_conversacion
+        FOREIGN KEY (ID_CONVERSACION)
+        REFERENCES CONVERSACION(ID_CONVERSACION)
+);
+
+--------------------------------------------------------
+-- 5. TABLA: ARCHIVO_ADJUNTO
+--------------------------------------------------------
+CREATE TABLE ARCHIVO_ADJUNTO (
+    ID_ARCHIVO SERIAL PRIMARY KEY,
+    ID_MENSAJE INT NOT NULL,
+    Tipo VARCHAR(50),
+    Ruta_archivo VARCHAR(255),
+    CONSTRAINT fk_mensaje
+        FOREIGN KEY (ID_MENSAJE)
+        REFERENCES MENSAJE(ID_MENSAJE)
+);
+
+--------------------------------------------------------
+-- 6. TABLA: PALABRA_CLAVE
+--------------------------------------------------------
+CREATE TABLE PALABRA_CLAVE (
+    ID_PC SERIAL PRIMARY KEY,
+    Palabra VARCHAR(100) NOT NULL,
+    Descripcion TEXT,
+    Respuesta_designada TEXT
+);
+
+--------------------------------------------------------
+-- 7. TABLA PUENTE: MENSAJE_PALABRA
+--------------------------------------------------------
+CREATE TABLE MENSAJE_PALABRA (
+    ID_MENSAJE INT,
+    ID_PC INT,
+    PRIMARY KEY (ID_MENSAJE, ID_PC),
+    CONSTRAINT fk_mp_mensaje
+        FOREIGN KEY (ID_MENSAJE)
+        REFERENCES MENSAJE(ID_MENSAJE),
+    CONSTRAINT fk_mp_pc
+        FOREIGN KEY (ID_PC)
+        REFERENCES PALABRA_CLAVE(ID_PC)
+);
+
+-------------------------------------------------------------------------------------------
+
+--------------------------------------------------------
+-- SOLICITANTE (4 registros)
+--------------------------------------------------------
+INSERT INTO SOLICITANTE (CEDULA, Nombre, Telefono, Tipo_solicitante) VALUES
+('0102030405', 'Ana Torres', '0987654321', 'estudiante'),
+('0203040506', 'Luis Mendoza', '0991122334', 'docente'),
+('0304050607', 'María Gómez', '0978899001', 'ciudadano'),
+('0405060708', 'Carlos Pérez', '0965566778', 'estudiante');
+
+--------------------------------------------------------
+-- ADMIN_SECRETARIA (4 registros)
+--------------------------------------------------------
+INSERT INTO ADMIN_SECRETARIA (CEDULA, Nombre, Apellido, Usuario, Contrasena_hash, Telefono) VALUES
+('1102233445', 'Laura', 'Ramírez', 'lramirez', 'hash123', '0999988776'),
+('2203344556', 'Pedro', 'Almeida', 'palmeida', 'hash456', '0988877665'),
+('3304455667', 'Diana', 'Vera', 'dvera', 'hash789', '0977766554'),
+('4405566778', 'Jorge', 'Cedeño', 'jcedeno', 'hash000', '0966655443');
+
+--------------------------------------------------------
+-- CONVERSACION (4 registros)
+--------------------------------------------------------
+INSERT INTO CONVERSACION (Fecha_inicio, Fecha_fin, CEDULA_SOLICITANTE) VALUES
+('2025-01-20 10:00:00', '2025-01-20 10:15:00', '0102030405'),
+('2025-01-21 11:30:00', '2025-01-21 11:50:00', '0203040506'),
+('2025-01-22 09:10:00', '2025-01-22 09:25:00', '0304050607'),
+('2025-01-23 14:00:00', NULL, '0405060708');
+
+--------------------------------------------------------
+-- MENSAJE (4 registros)
+--------------------------------------------------------
+INSERT INTO MENSAJE (ID_CONVERSACION, Remitente, Contenido, Fecha_hora) VALUES
+(1, 'usuario', 'Hola, necesito información sobre matrícula', '2025-01-20 10:01:00'),
+(1, 'bot', 'Claro, ¿qué deseas saber exactamente?', '2025-01-20 10:02:00'),
+(2, 'usuario', '¿Cuáles son los horarios de atención?', '2025-01-21 11:31:00'),
+(3, 'admin', 'Ya puedes retirar tu certificado mañana.', '2025-01-22 09:20:00');
+
+--------------------------------------------------------
+-- ARCHIVO_ADJUNTO (4 registros)
+--------------------------------------------------------
+INSERT INTO ARCHIVO_ADJUNTO (ID_MENSAJE, Tipo, Ruta_archivo) VALUES
+(1, 'imagen', '/archivos/captura1.png'),
+(2, 'pdf', '/archivos/reglamento.pdf'),
+(3, 'imagen', '/archivos/horarios.jpg'),
+(4, 'docx', '/archivos/certificado.docx');
+
+--------------------------------------------------------
+-- PALABRA_CLAVE (4 registros)
+--------------------------------------------------------
+INSERT INTO PALABRA_CLAVE (Palabra, Descripcion, Respuesta_designada) VALUES
+('matrícula', 'Consultas sobre proceso de matrícula', 'Puedes matricularte desde la plataforma web.'),
+('horarios', 'Horarios de atención', 'Atendemos de lunes a viernes de 08h00 a 16h00.'),
+('certificado', 'Solicitud de certificados', 'Tu certificado estará listo en 48 horas.'),
+('requisitos', 'Documentos necesarios', 'Necesitas cédula y comprobante de pago.');
+
+--------------------------------------------------------
+-- MENSAJE_PALABRA (4 relaciones)
+--------------------------------------------------------
+INSERT INTO MENSAJE_PALABRA (ID_MENSAJE, ID_PC) VALUES
+(1, 1),
+(3, 2),
+(4, 3),
+(1, 4);
+
+...................................................................................................

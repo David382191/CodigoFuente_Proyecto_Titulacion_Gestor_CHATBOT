@@ -1,0 +1,479 @@
+# ------------------- EJECUCIÓN --------------------- #
+ #@app.route("/")
+    #def inicio():
+    #    return redirect("/buscar-palabras")
+
+    ##Para crear palabras Clave.
+    #@app.route("/")
+    #def inicio():
+    #return redirect("/crear-palabra")
+
+    ##Para el Tablero de Palabras Clave
+    ##@app.route('/')
+    ##def palabras_clave():
+    ##    return render_template('/palabras-clave')
+
+    ##Para el Tablero de Palabras Clave
+    @app.route('/')
+    def home():
+        return render_template('/interfaces_generales/home.html')
+#######################################################
+
+
+@conversaciones_bp.route("/conversacion/<int:id>")
+def ver_conversacion(id):
+    conn = get_db()
+    cursor = conn.cursor(dictionary=True)
+
+    # Obtener datos principales
+    cursor.execute("SELECT * FROM CONVERSACION WHERE ID_CONVERSACION = %s", (id,))
+    conv = cursor.fetchone()
+
+    # Obtener mensajes asociados
+    cursor.execute("""
+        SELECT * FROM MENSAJE WHERE ID_CONVERSACION = %s ORDER BY Fecha ASC
+    """, (id,))
+    mensajes = cursor.fetchall()
+
+    cursor.close()
+    conn.close()
+
+    return render_template("ver_conversacion.html", conversacion=conv, mensajes=mensajes)
+
+
+# ============================================================
+# IMPRIMIR CONVERSACIÓN (versión simple)
+# ============================================================
+@conversaciones_bp.route("/imprimir-conversacion/<int:id>")
+def imprimir_conversacion(id):
+
+    conn = get_db()
+    cursor = conn.cursor(dictionary=True)
+
+    cursor.execute("SELECT * FROM CONVERSACION WHERE ID_CONVERSACION = %s", (id,))
+    conv = cursor.fetchone()
+
+    cursor.execute("""
+        SELECT * FROM MENSAJE WHERE ID_CONVERSACION = %s ORDER BY Fecha ASC
+    """, (id,))
+    mensajes = cursor.fetchall()
+
+    cursor.close()
+    conn.close()
+
+    # Renderiza un HTML que el navegador puede imprimir
+    return render_template("imprimir_conversacion.html", conversacion=conv, mensajes=mensajes)
+
+
+# ============================================================
+# ELIMINAR CONVERSACIÓN
+# ============================================================
+@conversaciones_bp.route("/eliminar-conversacion/<int:id>", methods=["POST", "GET"])
+def eliminar_conversacion(id):
+
+    conn = get_db()
+    cursor = conn.cursor()
+
+    # Primero borrar los mensajes asociados (si existen)
+    cursor.execute("DELETE FROM MENSAJE WHERE ID_CONVERSACION = %s", (id,))
+
+    # Luego borrar la conversación
+    cursor.execute("DELETE FROM CONVERSACION WHERE ID_CONVERSACION = %s", (id,))
+    
+    conn.commit()
+    cursor.close()
+    conn.close()
+
+    flash("Conversación eliminada correctamente", "success")
+    return redirect(url_for("conversaciones_bp.listar_conversaciones"))
+
+
+
+    # =====================================================
+# CONEXIÓN A MYSQL (ajusta según tu configuración)
+# =====================================================
+def get_conn():
+    return mysql.connector.connect(
+        host="localhost",
+        port="3307",
+        user="root",
+        password="12345",
+        database="chatbot_secretaria"
+    )
+
+
+
+
+###########################################################################################
+===========================================================================================
+-------------------------------------------------------------------------------------------
+
+from flask import Blueprint, render_template, flash
+from mysql.connector import Error
+from database.db import get_db
+
+secretaria_bp = Blueprint('secretaria', __name__)
+
+############################################################################################
+
+@secretaria_bp.route('/lista-secretarias')
+def listar_secretarias():
+    try:
+        conn = get_db()
+        cursor = conn.cursor(dictionary=True)
+
+        cursor.execute("""
+            SELECT
+                cedula   AS CEDULA,
+                nombre   AS Nombre,
+                apellido AS Apellido,
+                usuario  AS Usuario,
+                telefono AS Telefono
+            FROM admin_secretaria
+        """)
+
+        secretarias = cursor.fetchall()
+
+    except Error as e:
+        flash(f"Error al obtener secretarias: {e}", "danger")
+        secretarias = []
+
+    finally:
+        if 'cursor' in locals():
+            cursor.close()
+        if 'conn' in locals() and conn.is_connected():
+            conn.close()
+
+    return render_template(
+        "registros_crud/secretaria_tabla.html",
+        secretarias=secretarias
+    )
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+###################################################################################################
+
+# controllers/secretaria_controller.py
+from flask import Blueprint, render_template, request, redirect, url_for, flash
+import mysql.connector
+from mysql.connector import Error
+from werkzeug.security import generate_password_hash
+import os
+
+
+secretaria_form_bp = Blueprint('secretaria_form', __name__, template_folder='../templates')
+
+# =====================================================
+# CONEXIÓN A MYSQL
+# =====================================================
+def get_conn():
+    return mysql.connector.connect(
+        host="localhost",
+        port="3306",
+        user="root",
+        password="12345",
+        database="chatbot_secretaria"
+    )
+
+# ==========================
+# LISTAR SECRETARIAS
+# ==========================
+@secretaria_form_bp.route('/lista-secretarias')
+def listar_secretarias():
+    secretarias = []
+    try:
+        conn = get_conn()
+        cursor = conn.cursor(dictionary=True)
+        cursor.execute("SELECT CEDULA, Nombre, Apellido, Usuario, Telefono FROM ADMIN_SECRETARIA")
+        secretarias = cursor.fetchall()
+    except Error as e:
+        # Puedes mostrar un mensaje o loggear
+        flash(f"Error al obtener secretarias: {e}", "danger")
+    finally:
+        if 'cursor' in locals(): cursor.close()
+        if 'conn' in locals() and conn.is_connected(): conn.close()
+
+    return render_template("secretaria_tabla.html", secretarias=secretarias)
+
+# ==========================
+# CREAR SECRETARIA (GET -> formulario, POST -> guardar)
+# ==========================
+@secretaria_form_bp.route('/crear-secretaria', methods=['GET', 'POST'])
+def crear_secretaria():
+    if request.method == 'GET':
+        return render_template("secretaria_tabla.html")
+
+    # POST -> procesar formulario
+    cedula = request.form.get('CEDULA', '').strip()
+    nombre = request.form.get('Nombre', '').strip()
+    apellido = request.form.get('Apellido', '').strip()
+    usuario = request.form.get('Usuario', '').strip()
+    contrasena = request.form.get('Contrasena', '')  # recibimos la contraseña en claro
+    telefono = request.form.get('Telefono', '').strip()
+
+    # validaciones básicas
+    if not (cedula and nombre and apellido and usuario and contrasena):
+        flash("Por favor completa todos los campos obligatorios.", "warning")
+        return redirect(url_for('secretaria.crear_secretaria'))
+
+    # hash de la contraseña
+    hashed = generate_password_hash(contrasena)  # usa PBKDF2 por defecto
+
+    try:
+        conn = get_conn()
+        cursor = conn.cursor()
+        sql = """
+            INSERT INTO ADMIN_SECRETARIA
+            (CEDULA, Nombre, Apellido, Usuario, Contrasena_hash, Telefono)
+            VALUES (%s, %s, %s, %s, %s, %s)
+        """
+        cursor.execute(sql, (cedula, nombre, apellido, usuario, hashed, telefono or None))
+        conn.commit()
+        flash("Secretaria creada correctamente.", "success")
+        return redirect(url_for('secretaria.listar_secretarias'))
+
+    except mysql.connector.IntegrityError as ie:
+        # clave primaria duplicada o usuario duplicado (según constraints)
+        flash(f"Error de integridad: {ie}", "danger")
+        return redirect(url_for('secretaria.crear_secretaria'))
+
+    except Error as e:
+        flash(f"Error al crear secretaria: {e}", "danger")
+        return redirect(url_for('secretaria.crear_secretaria'))
+
+    finally:
+        if 'cursor' in locals(): cursor.close()
+        if 'conn' in locals() and conn.is_connected(): conn.close()
+
+# ==========================
+# EDITAR y ELIMINAR (esqueleto)
+# ==========================
+@secretaria_form_bp.route('/editar-secretaria/<cedula>', methods=['GET', 'POST'])
+def editar_secretaria(cedula):
+    # Implementa según necesidad: GET -> mostrar formulario con datos; POST -> actualizar
+    flash("Funcionalidad de edición no implementada aún.", "info")
+    return redirect(url_for('secretaria.listar_secretarias'))
+
+@secretaria_form_bp.route('/eliminar-secretaria/<cedula>', methods=['GET'])
+def eliminar_secretaria(cedula):
+    try:
+        conn = get_conn()
+        cursor = conn.cursor()
+        cursor.execute("DELETE FROM ADMIN_SECRETARIA WHERE CEDULA = %s", (cedula,))
+        conn.commit()
+        flash("Secretaria eliminada.", "success")
+    except Error as e:
+        flash(f"Error al eliminar: {e}", "danger")
+    finally:
+        if 'cursor' in locals(): cursor.close()
+        if 'conn' in locals() and conn.is_connected(): conn.close()
+    return redirect(url_for('secretaria.listar_secretarias'))
+
+
+#################################################################################################
+#################################################################################################
+*/ @secretaria_bp.route("/editar-secretaria/<cedula>", methods=["GET", "POST"])
+def editar_secretaria(cedula):
+    conn = get_db()
+    cursor = conn.cursor(dictionary=True)
+
+    if request.method == "POST":
+        nombre = request.form["nombre"]
+        telefono = request.form["telefono"]
+        tipo = request.form["tipo"]
+
+        sql = """
+            UPDATE admin_secretaria
+            SET Nombre=%s, Telefono=%s, Tipo_solicitante=%s
+            WHERE CEDULA=%s
+        """
+        cursor.execute(sql, (nombre, telefono, tipo, cedula))
+        conn.commit()
+
+        cursor.close()
+        conn.close()
+        return redirect("/solicitantes")
+
+    # GET → llenar formulario
+    cursor.execute("SELECT * FROM admin_secretaria WHERE CEDULA=%s", (cedula,))
+    solicitante = cursor.fetchone()
+
+    cursor.close()
+    conn.close()
+
+    return render_template("formularios/secretaria_formulario.html", solicitante=solicitante)
+
+    ///////////////////////////////////////////////////////////////////////////////////
+    ///////////////////////////////////////////////////////////////////////////////////
+        # GET → llenar formulario
+    #cursor.execute("SELECT * FROM admin_secretaria WHERE CEDULA=%s", (cedula,))
+    #solicitante = cursor.fetchone()
+
+
+
+    MÁS bOTADEROSA.
+    <a href="/editar-solicitante/{{ s.CEDULA }}" class="btn btn-warning btn-sm">
+        <i class="fa-solid fa-pen"></i>
+    </a>
+
+<a href="{{ url_for('solicitantes_bp.traerinformacion', cedula=s.CEDULA) }}"
+                            class="btn btn-warning btn-sm">
+                            <i class="fa-solid fa-pen"></i>
+                        </a>
+    ///////////////////////////////////////////////////////////////////////////////////
+    ///////////////////////////////////////////////////////////////////////////////////
+                <div class="mb-3">
+                <label>Tipo Solicitante</label>
+                <input type="text" name="Apellido" class="form-control"
+                    value="{{ solicitante_editar['Tipo_solicitante'] }}">
+            </div>
+    ///////////////////////////////////////////////////////////////////////////////////
+    ///////////////////////////////////////////////////////////////////////////////////
+
+    @solicitantes_bp.route("/editar-solicitante/<cedula>", methods=["GET", "POST"])
+def editar_solicitante(cedula):
+    conn = get_db()
+    cursor = conn.cursor(dictionary=True)
+
+    if request.method == "POST":
+        nombre = request.form["nombre"]
+        telefono = request.form["telefono"]
+        tipo = request.form["tipo"]
+
+        sql = """
+            UPDATE SOLICITANTE
+            SET Nombre=%s, Telefono=%s, Tipo_solicitante=%s
+            WHERE CEDULA=%s
+        """
+        cursor.execute(sql, (nombre, telefono, tipo, cedula))
+        conn.commit()
+
+        cursor.close()
+        conn.close()
+        return redirect("/solicitantes")
+
+    # GET → llenar formulario
+    cursor.execute("SELECT * FROM SOLICITANTE WHERE CEDULA=%s", (cedula,))
+    solicitante = cursor.fetchone()
+
+    cursor.close()
+    conn.close()
+
+    return render_template("formularios/solicitante_formulario.html", solicitante=solicitante)
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////////////////////////////
+    ##panel = Blueprint("panel", __name__)
+#login_bp.home
+##@panel.route("/home")
+##def home():
+##    if "admin_id" not in session:
+##        return redirect("/")
+##    return render_template("home.html")
+
+///////////////////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////////////////
+<a href = "{{ url_for('editar.editarsecretaria') }}"  button type="submit" class="btn btn-primary">
+                Guardar cambios
+            </button>
+
+
+///////////////////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////////////////
+
+# ============================================================
+# 4. ELIMINAR SOLICITANTE
+# ============================================================
+@solicitante_form_bp.route("/eliminar-solicitante/<cedula>")
+def eliminar_solicitante(cedula):
+    conn = get_db()
+    cursor = conn.cursor()
+
+    cursor.execute("DELETE FROM SOLICITANTE WHERE CEDULA=%s", (cedula,))
+    conn.commit()
+
+    cursor.close()
+    conn.close()
+
+    return redirect("/panel-solicitantes")
+
+
+
+
+///////////////////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////////////////
+    @solicitantes_bp.route("/eliminar-solicitante/<cedula>")
+def eliminar_solicitante(cedula):
+    conn = get_db()
+    cursor = conn.cursor()
+
+    cursor.execute("DELETE FROM SOLICITANTE WHERE CEDULA=%s", (cedula,))
+    conn.commit()
+
+    cursor.close()
+    conn.close()
+
+    return redirect("/solicitantes")

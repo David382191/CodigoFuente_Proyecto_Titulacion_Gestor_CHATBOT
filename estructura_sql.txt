@@ -1,0 +1,83 @@
+CREATE DATABASE IF NOT EXISTS chatbot_secretaria;
+USE chatbot_secretaria;
+
+--------------------------------------------------------
+-- 1. TABLA: SOLICITANTE
+--------------------------------------------------------
+CREATE TABLE SOLICITANTE (
+    CEDULA VARCHAR(20) PRIMARY KEY,
+    Nombre VARCHAR(100) NOT NULL,
+    Telefono VARCHAR(20),
+    Tipo_solicitante VARCHAR(50)
+);
+
+--------------------------------------------------------
+-- 2. TABLA: ADMIN_SECRETARIA
+--------------------------------------------------------
+CREATE TABLE ADMIN_SECRETARIA (
+    CEDULA VARCHAR(20) PRIMARY KEY,
+    Nombre VARCHAR(100) NOT NULL,
+    Apellido VARCHAR(100) NOT NULL,
+    Usuario VARCHAR(50) UNIQUE NOT NULL,
+    Contrasena_hash VARCHAR(255) NOT NULL,
+    Telefono VARCHAR(20)
+);
+
+--------------------------------------------------------
+-- 3. TABLA: CONVERSACION
+--------------------------------------------------------
+CREATE TABLE CONVERSACION (
+    ID_CONVERSACION INT AUTO_INCREMENT PRIMARY KEY,
+    Fecha_inicio DATETIME NOT NULL,
+    Fecha_fin DATETIME,
+    CEDULA_SOLICITANTE VARCHAR(20),
+    FOREIGN KEY (CEDULA_SOLICITANTE) REFERENCES SOLICITANTE(CEDULA)
+);
+
+--------------------------------------------------------
+-- 4. TABLA: MENSAJE
+--------------------------------------------------------
+CREATE TABLE MENSAJE (
+    ID_MENSAJE INT AUTO_INCREMENT PRIMARY KEY,
+    ID_CONVERSACION INT NOT NULL,
+    Remitente ENUM('usuario','bot','admin') NOT NULL,
+    Contenido TEXT,
+    Fecha_hora DATETIME NOT NULL,
+    FOREIGN KEY (ID_CONVERSACION) REFERENCES CONVERSACION(ID_CONVERSACION)
+);
+
+--------------------------------------------------------
+-- 5. TABLA: ARCHIVO_ADJUNTO
+--------------------------------------------------------
+CREATE TABLE ARCHIVO_ADJUNTO (
+    ID_ARCHIVO INT AUTO_INCREMENT PRIMARY KEY,
+    ID_MENSAJE INT NOT NULL,
+    Tipo VARCHAR(50),
+    Ruta_archivo VARCHAR(255),
+    FOREIGN KEY (ID_MENSAJE) REFERENCES MENSAJE(ID_MENSAJE)
+);
+
+--------------------------------------------------------
+-- 6. TABLA: PALABRA_CLAVE
+--------------------------------------------------------
+CREATE TABLE PALABRA_CLAVE (
+    ID_PC INT AUTO_INCREMENT PRIMARY KEY,
+    Palabra VARCHAR(100) NOT NULL,
+    Descripcion TEXT,
+    Respuesta_designada TEXT
+);
+
+--------------------------------------------------------
+-- 7. TABLA PUENTE: MENSAJE_PALABRA
+--------------------------------------------------------
+CREATE TABLE MENSAJE_PALABRA (
+    ID_MENSAJE INT,
+    ID_PC INT,
+    PRIMARY KEY (ID_MENSAJE, ID_PC),
+    FOREIGN KEY (ID_MENSAJE) REFERENCES MENSAJE(ID_MENSAJE),
+    FOREIGN KEY (ID_PC) REFERENCES PALABRA_CLAVE(ID_PC)
+);
+
+--------------------------------------------------------
+    ·····························
+--------------------------------------------------------
