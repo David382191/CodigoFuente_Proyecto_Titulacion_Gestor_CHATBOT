@@ -10,36 +10,33 @@ secretaria_bp = Blueprint('secretaria_bp', __name__)
 # ============================================================
 # 1. LISTAR TODAS LAS SECRETARIAS
 # ============================================================
-
-
-@secretaria_bp.route("/lista_secretarias")
+@secretaria_bp.route('/lista-secretarias')
 def lista_secretarias():
-    conn = get_db()
-    cursor = conn.cursor(cursor_factory=RealDictCursor)
+    try:
+        conn = get_db()
+        cursor = conn.cursor(dictionary=True)
 
-    # 1️⃣ ¿Qué base de datos es?
-    cursor.execute("SELECT current_database() AS db")
-    print("📌 BASE DE DATOS:", cursor.fetchone())
+        cursor.execute("""
+            SELECT
+                cedula   AS CEDULA,
+                nombre   AS Nombre,
+                apellido AS Apellido,
+                usuario  AS Usuario,
+                telefono AS Telefono
+            FROM admin_secretaria
+        """)
 
-    # 2️⃣ ¿Cuántos registros hay?
-    cursor.execute("SELECT COUNT(*) AS total FROM admin_secretaria")
-    print("📌 TOTAL REGISTROS:", cursor.fetchone())
+        secretarias = cursor.fetchall()
 
-    # 3️⃣ Traer datos reales
-    cursor.execute("""
-        SELECT
-            cedula   AS "CEDULA",
-            nombre   AS "Nombre",
-            apellido AS "Apellido",
-            usuario  AS "Usuario",
-            telefono AS "Telefono"
-        FROM admin_secretaria
-    """)
-    secretarias = cursor.fetchall()
-    print("📌 DATOS:", secretarias)
+    except Error as e:
+        flash(f"Error al obtener secretarias: {e}", "danger")
+        secretarias = []
 
-    cursor.close()
-    conn.close()
+    finally:
+        if 'cursor' in locals():
+            cursor.close()
+        if 'conn' in locals() and conn.is_connected():
+            conn.close()
 
     return render_template(
         "registros_crud/secretaria_tabla.html",

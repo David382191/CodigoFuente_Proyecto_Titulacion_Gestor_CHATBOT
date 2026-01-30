@@ -51,16 +51,18 @@ def create_app():
 
     return app
 
-app = create_app()
+#app = create_app()
 #################################################################################################
+
 if __name__ == "__main__":
-    #app = create_app()
-    #print(app.url_map)  
-    
+    app = create_app()
+    app.run(debug=True)
+
+
     #esto de aquí es para la nube
     #app = create_app()
-    port = int(os.environ.get("PORT", 5000))
-    app.run(host="0.0.0.0", port=port)
+    #port = int(os.environ.get("PORT", 5000))
+    #app.run(host="0.0.0.0", port=port)
 #################################################################################################
 
 #    print("RUTAS REGISTRADAS:")
