@@ -24,6 +24,10 @@ from controllers.registro_crud.secretaria_tabla_controller import secretaria_bp
 # ----------------------- Editables ----------------------------------------------#
 from controllers.editables.editar import editar
 
+# ----------------------- BOT ----------------------------------------------#
+from IA_BOT_OLLAMA.ia_bot_ollama import bot_bp
+
+#################################################################################################
 def create_app():
     app = Flask(__name__)
     app.secret_key = "ATHELL_SECRET_KEY_999"
@@ -48,6 +52,10 @@ def create_app():
 
     #Editar
     app.register_blueprint(editar)
+
+    #IA CHAT-BOT
+    app.register_blueprint(bot_bp)
+
 
     return app
 

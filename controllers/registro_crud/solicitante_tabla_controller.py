@@ -12,8 +12,6 @@ def home():
 def crud_solicitantes():
     return render_template('registros_crud/solicitantes_tabla.html')
 # ============================================================
-
-
 # ============================================================
 # 1. LISTAR SOLICITANTES
 # ============================================================
